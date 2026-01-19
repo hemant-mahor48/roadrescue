@@ -1,0 +1,229 @@
+version: '3.8'
+
+services:
+  # ===========================================
+  # DATABASES
+  # ===========================================
+
+  # PostgreSQL - User Service Database
+  postgres-user:
+    image: postgres:15-alpine
+    container_name: postgres-user
+    environment:
+      POSTGRES_DB: roadrescue_user_db
+      POSTGRES_USER: hemant_user
+      POSTGRES_PASSWORD: roadrescuePass@48
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-user-data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init-user-db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - roadrescue-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user_service_user -d user_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL - Request Service Database
+  postgres-request:
+    image: postgres:15-alpine
+    container_name: postgres-request
+    environment:
+      POSTGRES_DB: request_service_db
+      POSTGRES_USER: request_service_user
+      POSTGRES_PASSWORD: request_pass_123
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-request-data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init-request-db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - roadrescue-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U request_service_user -d request_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL - Payment Service Database
+  postgres-payment:
+    image: postgres:15-alpine
+    container_name: postgres-payment
+    environment:
+      POSTGRES_DB: payment_service_db
+      POSTGRES_USER: payment_service_user
+      POSTGRES_PASSWORD: payment_pass_123
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres-payment-data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init-payment-db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - roadrescue-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payment_service_user -d payment_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL - Rating Service Database
+  postgres-rating:
+    image: postgres:15-alpine
+    container_name: postgres-rating
+    environment:
+      POSTGRES_DB: rating_service_db
+      POSTGRES_USER: rating_service_user
+      POSTGRES_PASSWORD: rating_pass_123
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres-rating-data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init-rating-db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - roadrescue-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rating_service_user -d rating_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL - Admin Service Database
+  postgres-admin:
+    image: postgres:15-alpine
+    container_name: postgres-admin
+    environment:
+      POSTGRES_DB: admin_service_db
+      POSTGRES_USER: admin_service_user
+      POSTGRES_PASSWORD: admin_pass_123
+    ports:
+      - "5436:5432"
+    volumes:
+      - postgres-admin-data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init-admin-db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - roadrescue-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin_service_user -d admin_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MongoDB - Analytics Service
+  mongodb-analytics:
+    image: mongo:7.0
+    container_name: mongodb-analytics
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: analytics_admin
+      MONGO_INITDB_ROOT_PASSWORD: analytics_pass_123
+      MONGO_INITDB_DATABASE: analytics_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-analytics-data:/data/db
+      - ./infrastructure/mongodb/init-analytics-db.js:/docker-entrypoint-initdb.d/init.js
+    networks:
+      - roadrescue-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/analytics_db --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis - Caching & Geospatial
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: redis-server /usr/local/etc/redis/redis.conf
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+      - ./infrastructure/redis/redis.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - roadrescue-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===========================================
+  # MESSAGE BROKER
+  # ===========================================
+
+  # Zookeeper for Kafka
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - roadrescue-network
+    healthcheck:
+      test: echo srvr | nc localhost 2181 || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Kafka Broker
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    networks:
+      - roadrescue-network
+    healthcheck:
+      test: kafka-broker-api-versions --bootstrap-server localhost:9092
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Kafka UI (Optional - for development)
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8090:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: roadrescue-cluster
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    networks:
+      - roadrescue-network
+
+networks:
+  roadrescue-network:
+    driver: bridge
+
+volumes:
+  postgres-user-data:
+  postgres-request-data:
+  postgres-payment-data:
+  postgres-rating-data:
+  postgres-admin-data:
+  mongodb-analytics-data:
+  redis-data:
+  kafka-data:
