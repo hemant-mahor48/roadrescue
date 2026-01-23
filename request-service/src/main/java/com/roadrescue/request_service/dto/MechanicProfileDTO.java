@@ -1,4 +1,4 @@
-package com.roadrescue.auth_service.dto;
+package com.roadrescue.request_service.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

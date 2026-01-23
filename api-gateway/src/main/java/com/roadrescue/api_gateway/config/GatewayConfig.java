@@ -20,11 +20,14 @@ public class GatewayConfig {
                         .path("/api/v1/users/**")
                         .filters(f -> f.filter(jwtFilter))
                         .uri("lb://AUTH-SERVICE"))
-
                 .route("mechanic-routes", r -> r
                         .path("/api/v1/mechanics/**")
                         .filters(f -> f.filter(jwtFilter))
                         .uri("lb://AUTH-SERVICE"))
+                .route("request-routes", r -> r
+                        .path("/api/v1/requests/**")
+                        .filters(f -> f.filter(jwtFilter))
+                        .uri("lb://REQUEST-SERVICE"))
                 .build();
     }
 }

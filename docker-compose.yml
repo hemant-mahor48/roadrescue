@@ -31,9 +31,9 @@ services:
     image: postgres:15-alpine
     container_name: postgres-request
     environment:
-      POSTGRES_DB: request_service_db
-      POSTGRES_USER: request_service_user
-      POSTGRES_PASSWORD: request_pass_123
+      POSTGRES_DB: roadrescue_request_db
+      POSTGRES_USER: hemant_user
+      POSTGRES_PASSWORD: roadrescuePass@48
     ports:
       - "5433:5432"
     volumes:
@@ -52,9 +52,9 @@ services:
     image: postgres:15-alpine
     container_name: postgres-payment
     environment:
-      POSTGRES_DB: payment_service_db
-      POSTGRES_USER: payment_service_user
-      POSTGRES_PASSWORD: payment_pass_123
+      POSTGRES_DB: roadrescue_payment_db
+      POSTGRES_USER: hemant_user
+      POSTGRES_PASSWORD: roadrescuePass@48
     ports:
       - "5434:5432"
     volumes:
@@ -73,9 +73,9 @@ services:
     image: postgres:15-alpine
     container_name: postgres-rating
     environment:
-      POSTGRES_DB: rating_service_db
-      POSTGRES_USER: rating_service_user
-      POSTGRES_PASSWORD: rating_pass_123
+      POSTGRES_DB: roadrescue_rating_db
+      POSTGRES_USER: hemant_user
+      POSTGRES_PASSWORD: roadrescuePass@48
     ports:
       - "5435:5432"
     volumes:
@@ -94,9 +94,9 @@ services:
     image: postgres:15-alpine
     container_name: postgres-admin
     environment:
-      POSTGRES_DB: admin_service_db
-      POSTGRES_USER: admin_service_user
-      POSTGRES_PASSWORD: admin_pass_123
+      POSTGRES_DB: roadrescue_admin_db
+      POSTGRES_USER: hemant_user
+      POSTGRES_PASSWORD: roadrescuePass@48
     ports:
       - "5436:5432"
     volumes:
@@ -115,9 +115,9 @@ services:
     image: mongo:7.0
     container_name: mongodb-analytics
     environment:
-      MONGO_INITDB_ROOT_USERNAME: analytics_admin
-      MONGO_INITDB_ROOT_PASSWORD: analytics_pass_123
-      MONGO_INITDB_DATABASE: analytics_db
+      MONGO_INITDB_ROOT_USERNAME: hemant_user
+      MONGO_INITDB_ROOT_PASSWORD: roadrescuePass@48
+      MONGO_INITDB_DATABASE: roadrescue_analytics_db
     ports:
       - "27017:27017"
     volumes:

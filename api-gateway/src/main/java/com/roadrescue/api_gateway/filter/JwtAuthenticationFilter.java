@@ -1,5 +1,6 @@
 package com.roadrescue.api_gateway.filter;
 
+import com.roadrescue.api_gateway.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -16,6 +17,9 @@ public class JwtAuthenticationFilter implements GatewayFilter {
 
     @Autowired
     private WebClient.Builder webClientBuilder;
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -44,7 +48,9 @@ public class JwtAuthenticationFilter implements GatewayFilter {
                         System.out.println("Invalid token");
                         return unauthorized(exchange);
                     }
-                    return chain.filter(exchange);
+                    ServerWebExchange mutatedExchange =
+                            populateRequestWithHeaders(exchange, token);
+                    return chain.filter(mutatedExchange);
                 })
                 .onErrorResume(ex -> {
                     ex.printStackTrace();
@@ -57,6 +63,23 @@ public class JwtAuthenticationFilter implements GatewayFilter {
         exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
         return exchange.getResponse().setComplete();
     }
+
+    private ServerWebExchange populateRequestWithHeaders(ServerWebExchange exchange, String token) {
+        try {
+            String email = jwtUtil.extractEmail(token);
+
+            return exchange.mutate()
+                    .request(exchange.getRequest()
+                            .mutate()
+                            .header("X-auth-user", email)
+                            .build())
+                    .build();
+
+        } catch (Exception e) {
+            return exchange;
+        }
+    }
+
 }
 
 
