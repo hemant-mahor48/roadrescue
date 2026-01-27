@@ -10,11 +10,15 @@ import com.roadrescue.request_service.model.Request;
 import com.roadrescue.request_service.repository.RequestRepository;
 import com.roadrescue.request_service.service.KafkaProducerService;
 import com.roadrescue.request_service.service.RequestService;
+import feign.FeignException;
+import jakarta.ws.rs.ServiceUnavailableException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RequestServiceImpl implements RequestService {
 
     private final RequestRepository requestRepository;
@@ -24,14 +28,23 @@ public class RequestServiceImpl implements RequestService {
 
     @Override
     public String createRequest(String email, BreakdownRequest breakdownRequest) {
-        UserDTO userDTO = userFeignClient.getCurrentUser(email)
-                .orElseThrow(() -> new UserNotFoundException("User Not Found!!")).getData();
+        try {
+            UserDTO userDTO = userFeignClient.getCurrentUser(email)
+                    .orElseThrow(() -> new UserNotFoundException("User Not Found!!")).getData();
 
-        Request request = requestMapper.toRequest(breakdownRequest, userDTO);
-        Request savedRequest = requestRepository.save(request);
+            Request request = requestMapper.toRequest(breakdownRequest, userDTO);
+            Request savedRequest = requestRepository.save(request);
 
-        BreakdownRequestEvent event = requestMapper.toBreakdownRequestEvent(savedRequest, userDTO);
-        kafkaProducerService.sendEvent(event);
-        return savedRequest.getId().toString();
+            BreakdownRequestEvent event = requestMapper.toBreakdownRequestEvent(savedRequest, userDTO);
+            try {
+                kafkaProducerService.sendEvent(event);
+            } catch (Exception e) {
+                log.error("Failed to publish event for request: {}", savedRequest.getId(), e);
+            }
+            return savedRequest.getId().toString();
+        } catch (FeignException e) {
+            log.error("Failed to fetch user details", e);
+            throw new ServiceUnavailableException("User service is currently unavailable");
+        }
     }
 }

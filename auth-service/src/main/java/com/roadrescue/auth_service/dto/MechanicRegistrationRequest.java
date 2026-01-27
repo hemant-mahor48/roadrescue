@@ -9,12 +9,6 @@ import java.math.BigDecimal;
 @Data
 @Validated
 public class MechanicRegistrationRequest {
-    @NotBlank(message = "Vehicle number is required")
-    private String vehicleNumber;
-
-    @NotBlank(message = "License number is required")
-    private String licenseNumber;
-
     @NotNull(message = "Latitude is required")
     private BigDecimal currentLocationLat;
 

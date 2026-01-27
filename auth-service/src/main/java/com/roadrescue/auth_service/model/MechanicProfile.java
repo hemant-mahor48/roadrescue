@@ -34,11 +34,11 @@ public class MechanicProfile {
     @Column(precision = 11, scale = 8)
     private BigDecimal currentLocationLng;
 
-    private String vehicleNumber;
     private String licenseNumber;
+    private String aadhaarNumber;
 
     @Column(nullable = false)
-    private Boolean aadharVerified = false;
+    private Boolean aadhaarVerified = false;
 
     @Column(nullable = false)
     private Boolean policeVerificationDone = false;

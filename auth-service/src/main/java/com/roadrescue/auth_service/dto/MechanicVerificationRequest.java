@@ -7,9 +7,6 @@ import org.springframework.validation.annotation.Validated;
 @Data
 @Validated
 public class MechanicVerificationRequest {
-    @NotBlank(message = "Vehicle number is required")
-    private String vehicleNumber;
-
     @NotBlank(message = "License number is required")
     private String licenseNumber;
 

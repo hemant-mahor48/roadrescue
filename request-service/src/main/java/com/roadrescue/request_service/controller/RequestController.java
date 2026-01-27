@@ -3,6 +3,7 @@ package com.roadrescue.request_service.controller;
 import com.roadrescue.request_service.dto.ApiResponse;
 import com.roadrescue.request_service.dto.BreakdownRequest;
 import com.roadrescue.request_service.service.RequestService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +18,7 @@ public class RequestController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<String>> createBreakdownRequest(@RequestHeader("X-auth-user") String email,
-                                                                      @RequestBody BreakdownRequest request) {
+                                                                      @RequestBody @Valid BreakdownRequest request) {
         String requestId = requestService.createRequest(email, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse
                 .success("Breakdown request created successfully", requestId));

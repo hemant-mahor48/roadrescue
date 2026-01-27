@@ -1,4 +1,4 @@
-package com.roadrescue.auth_service.dto;
+package com.roadrescue.matching_service.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,11 +19,11 @@ public class MechanicProfileDTO {
     private BigDecimal currentLocationLat;
     private BigDecimal currentLocationLng;
     private String licenseNumber;
-    private Boolean aadhaarVerified;
+    private Boolean aadharVerified;
     private Boolean policeVerificationDone;
 
-    private Double rating = 4.5;              // Default rating
-    private Integer totalJobs = 0;
-    private Double acceptanceRate = 85.0;     // Default 85%
-    private String specialization = "GENERAL";
+    private Double rating;
+    private Integer totalJobs;
+    private Double acceptanceRate;
+    private String specialization;
 }

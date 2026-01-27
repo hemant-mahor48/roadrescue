@@ -31,12 +31,11 @@ public class RequestMapper {
     }
 
     public BreakdownRequestEvent toBreakdownRequestEvent(Request savedRequest, UserDTO userDTO) {
-        Map<BigDecimal, BigDecimal> locationMap = new HashMap<>();
-        locationMap.put(savedRequest.getLocationLatitude(), savedRequest.getLocationLongitude());
         return BreakdownRequestEvent.builder()
                 .requestId(savedRequest.getId())
                 .userId(userDTO.getId())
-                .location(locationMap)
+                .latitude(savedRequest.getLocationLatitude())
+                .longitude(savedRequest.getLocationLongitude())
                 .issueType(savedRequest.getIssueType())
                 .timestamp(LocalDateTime.now())
                 .build();
