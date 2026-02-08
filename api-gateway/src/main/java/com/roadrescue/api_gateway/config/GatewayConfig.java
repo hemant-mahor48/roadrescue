@@ -24,6 +24,9 @@ public class GatewayConfig {
                         .path("/api/v1/mechanics/**")
                         .filters(f -> f.filter(jwtFilter))
                         .uri("lb://AUTH-SERVICE"))
+                .route("auth-routes", r -> r
+                        .path("/api/v1/auth/**")
+                        .uri("lb://AUTH-SERVICE"))
                 .route("request-routes", r -> r
                         .path("/api/v1/requests/**")
                         .filters(f -> f.filter(jwtFilter))

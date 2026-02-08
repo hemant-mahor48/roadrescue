@@ -38,6 +38,8 @@ public class MatchingServiceImpl implements MatchingService {
 
         if (nearbyMechanics.isEmpty()) {
             log.warn("No mechanics found for request: {}", event.getRequestId());
+            // TODO: Publish 'no-mechanic-found' event to trigger Notification Service (suggest towing) and Analytics
+            // kafkaProducerService.sendNoMechanicFoundEvent(event);
             return null;
         }
 

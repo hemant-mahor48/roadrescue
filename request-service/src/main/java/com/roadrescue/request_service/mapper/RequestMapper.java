@@ -1,5 +1,9 @@
 package com.roadrescue.request_service.mapper;
 
+import java.time.LocalDateTime;
+
+import org.springframework.stereotype.Component;
+
 import com.roadrescue.request_service.dto.BreakdownRequest;
 import com.roadrescue.request_service.dto.BreakdownRequestEvent;
 import com.roadrescue.request_service.dto.UserDTO;
@@ -7,12 +11,6 @@ import com.roadrescue.request_service.dto.VehicleDTO;
 import com.roadrescue.request_service.model.IssueType;
 import com.roadrescue.request_service.model.Request;
 import com.roadrescue.request_service.model.RequestStatus;
-import org.springframework.stereotype.Component;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
 
 @Component
 public class RequestMapper {
