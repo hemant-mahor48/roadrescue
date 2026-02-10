@@ -1,6 +1,7 @@
 package com.roadrescue.request_service.exceptions.exceptionHandler;
 
 import com.roadrescue.request_service.dto.ApiResponse;
+import com.roadrescue.request_service.exceptions.BusinessException;
 import com.roadrescue.request_service.exceptions.UserNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -61,5 +62,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("An unexpected error occurred. Please try again later."));
+    }
+
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ApiResponse<Void>> handleBusinessException(
+            BusinessException ex) {
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(ex.getMessage()));
     }
 }
