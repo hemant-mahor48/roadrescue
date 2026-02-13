@@ -1,5 +1,6 @@
 package com.roadrescue.request_service.dto;
 
+import com.roadrescue.request_service.model.IssueType;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 import org.springframework.validation.annotation.Validated;
@@ -20,9 +21,8 @@ public class BreakdownRequest {
     @DecimalMax(value = "180.0", message = "Invalid longitude")
     private BigDecimal currentLocationLng;
 
-    @NotBlank(message = "Issue type is required")
-    @Pattern(regexp = "TIRE_PUNCTURE|BATTERY_ISSUE|ENGINE_FAILURE|FUEL_EMPTY|LOCKOUT|ACCIDENT|OTHER")
-    private String issueType;
+    @NotNull(message = "Issue type is required")
+    private IssueType issueType;
 
     private String description;
 

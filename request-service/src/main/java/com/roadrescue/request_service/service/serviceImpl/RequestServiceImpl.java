@@ -78,18 +78,19 @@ public class RequestServiceImpl implements RequestService {
         request.setStatus(RequestStatus.ASSIGNED);
         requestRepository.save(request);
 
-        // Publish mechanic-assignment event
+        // Publish mechanic-assignment event with customerId
         MechanicAssignmentEvent event = MechanicAssignmentEvent.builder()
                 .requestId(requestId)
                 .mechanicId(mechanicUser.getMechanicProfile().getId())
+                .customerId(request.getUserId())
                 .status("ASSIGNED")
                 .assignedAt(LocalDateTime.now())
                 .build();
 
         kafkaProducerService.sendMechanicAssignmentEvent(event);
 
-        log.info("Request {} assigned to mechanic {}", requestId,
-                mechanicUser.getMechanicProfile().getId());
+        log.info("Request {} assigned to mechanic {}, customer {} notified",
+                requestId, mechanicUser.getMechanicProfile().getId(), request.getUserId());
     }
 
     @Override
@@ -97,6 +98,7 @@ public class RequestServiceImpl implements RequestService {
     public void rejectRequest(UUID requestId, String mechanicEmail) {
         UserDTO userDTO = userFeignClient.getCurrentUser(mechanicEmail)
                 .orElseThrow(() -> new UserNotFoundException("User Not Found!!")).getData();
+
         // Update request status back to SEARCHING
         Request request = requestRepository.findById(requestId)
                 .orElseThrow(() -> new ResourceNotFoundException("Request not found"));

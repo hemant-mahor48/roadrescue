@@ -1,4 +1,4 @@
-package com.roadrescue.matching_service.model;
+package com.roadrescue.notification_service.dto;
 
 public enum IssueType {
     TYRE_PUNCTURE,

@@ -44,7 +44,7 @@ public class MechanicNotificationConsumer {
                     NotificationType.NEW_REQUEST_NEARBY,
                     "New Request Nearby!",
                     "A customer needs help with "
-                            + formatIssueType(event.getIssueType())
+                            + formatIssueType(String.valueOf(event.getIssueType()))
                             + ". Distance: " + distanceText,
                     data
             );

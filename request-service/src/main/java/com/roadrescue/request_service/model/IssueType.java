@@ -1,7 +1,7 @@
 package com.roadrescue.request_service.model;
 
 public enum IssueType {
-    TIRE_PUNCTURE,
+    TYRE_PUNCTURE,
     BATTERY_ISSUE,
     ENGINE_FAILURE,
     FUEL_EMPTY,

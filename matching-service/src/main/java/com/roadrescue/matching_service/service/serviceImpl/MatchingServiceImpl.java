@@ -142,7 +142,7 @@ public class MatchingServiceImpl implements MatchingService {
         }
 
         return switch (issueType) {
-            case TIRE_PUNCTURE -> specialization.contains("TIRE");
+            case TYRE_PUNCTURE -> specialization.contains("TYRE");
             case BATTERY_ISSUE -> specialization.contains("BATTERY");
             case ENGINE_FAILURE -> specialization.contains("ENGINE");
             case FUEL_EMPTY -> specialization.contains("FUEL");

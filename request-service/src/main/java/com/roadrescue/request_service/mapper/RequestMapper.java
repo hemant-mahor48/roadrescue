@@ -20,7 +20,7 @@ public class RequestMapper {
                 .vehicleIds(userDTO.getVehicles().stream().map(VehicleDTO::getId).toList())
                 .locationLatitude(breakdownRequest.getCurrentLocationLat())
                 .locationLongitude(breakdownRequest.getCurrentLocationLng())
-                .issueType(IssueType.valueOf(breakdownRequest.getIssueType()))
+                .issueType(breakdownRequest.getIssueType())
                 .description(breakdownRequest.getDescription())
                 .address(breakdownRequest.getAddress())
                 .status(RequestStatus.PENDING)

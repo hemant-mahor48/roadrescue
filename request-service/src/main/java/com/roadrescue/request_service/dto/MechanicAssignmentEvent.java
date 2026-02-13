@@ -15,6 +15,7 @@ import java.util.UUID;
 public class MechanicAssignmentEvent {
     private UUID requestId;
     private UUID mechanicId;
+    private UUID customerId;
     private String status;
     private LocalDateTime assignedAt;
 }
