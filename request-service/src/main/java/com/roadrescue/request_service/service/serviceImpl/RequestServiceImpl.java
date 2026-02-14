@@ -19,7 +19,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -47,6 +50,54 @@ public class RequestServiceImpl implements RequestService {
                 log.error("Failed to publish event for request: {}", savedRequest.getId(), e);
             }
             return savedRequest.getId().toString();
+        } catch (FeignException e) {
+            log.error("Failed to fetch user details", e);
+            throw new ServiceUnavailableException("User service is currently unavailable");
+        }
+    }
+
+    @Override
+    public List<BreakdownRequestDTO> getMyRequests(String email) {
+        List<BreakdownRequestDTO> myRequests = new ArrayList<>();
+        try {
+            UserDTO userDTO = userFeignClient.getCurrentUser(email)
+                    .orElseThrow(() -> new UserNotFoundException("User Not Found!!"))
+                    .getData();
+
+            List<Request> requests = requestRepository.findByUserId(userDTO.getId());
+            for(Request req : requests) {
+                UserDTO mechanicDTO = userFeignClient.getCurrentMechanicById(req.getMechanicId())
+                        .orElseThrow(() -> new UserNotFoundException("Mechanic Not Found!!"))
+                        .getData();
+                myRequests.add(requestMapper.convertToBreakdownRequestDTO(req, mechanicDTO));
+            }
+            return myRequests;
+        } catch (FeignException e) {
+            log.error("Failed to fetch user details", e);
+            throw new ServiceUnavailableException("User service is currently unavailable");
+        }
+    }
+
+    @Override
+    public BreakdownRequestDTO getRequestById(UUID requestId, String email) {
+        try {
+            UserDTO userDTO = userFeignClient.getCurrentUser(email)
+                    .orElseThrow(() -> new UserNotFoundException("User Not Found!!"))
+                    .getData();
+
+            Request request = requestRepository.findById(requestId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Request not found"));
+
+            UserDTO mechanicDTO = userFeignClient.getCurrentMechanicById(request.getMechanicId())
+                    .orElseThrow(() -> new UserNotFoundException("Mechanic Not Found!!"))
+                    .getData();
+
+            // Verify the request belongs to the user
+            if (!request.getUserId().equals(userDTO.getId())) {
+                throw new BusinessException("You don't have permission to view this request");
+            }
+
+            return requestMapper.convertToBreakdownRequestDTO(request, mechanicDTO);
         } catch (FeignException e) {
             log.error("Failed to fetch user details", e);
             throw new ServiceUnavailableException("User service is currently unavailable");
