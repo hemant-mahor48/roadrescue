@@ -57,7 +57,7 @@ public class MechanicServiceImpl implements MechanicService {
         com.roadrescue.auth_service.model.MechanicProfile saved = mechanicProfileRepository.save(profile);
 
         //Updating current location in Redis
-        locationServiceClient.updateLocation(profile.getId(), profile.getCurrentLocationLat(), profile.getCurrentLocationLng());
+        locationServiceClient.updateLocation(user.getId(), profile.getCurrentLocationLat(), profile.getCurrentLocationLng());
 
         log.info("Mechanic registered: userEmail={}, profileId={}", email, saved.getId());
 
@@ -104,7 +104,7 @@ public class MechanicServiceImpl implements MechanicService {
         log.info("Mechanic verified: userEmail={}, profileId={}", email, saved.getId());
 
         //Updating availability in Redis
-        locationServiceClient.updateAvailability(profile.getId(), saved.getIsAvailable());
+        locationServiceClient.updateAvailability(user.getId(), saved.getIsAvailable());
 
         return modelMapper.map(saved, MechanicProfileDTO.class);
     }
@@ -124,7 +124,7 @@ public class MechanicServiceImpl implements MechanicService {
         mechanicProfileRepository.save(profile);
 
         // ✅ Sync to Redis (for geospatial queries)
-        locationServiceClient.updateLocation(profile.getId(), lat, lng);
+        locationServiceClient.updateLocation(user.getId(), lat, lng);
 
         log.info("Updated location for mechanic: {} to ({}, {})",
                 profile.getId(), lat, lng);
@@ -144,7 +144,7 @@ public class MechanicServiceImpl implements MechanicService {
         mechanicProfileRepository.save(profile);
 
         // ✅ Sync to Redis
-        locationServiceClient.updateAvailability(profile.getId(), available);
+        locationServiceClient.updateAvailability(user.getId(), available);
 
         log.info("Updated availability for mechanic: {} to {}",
                 profile.getId(), available);

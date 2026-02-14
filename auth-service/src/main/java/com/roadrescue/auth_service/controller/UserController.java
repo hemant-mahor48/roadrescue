@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -23,6 +24,12 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<UserDTO>> getCurrentUser(@RequestHeader("X-auth-user") String email) {
         UserDTO user = userService.getUserByEmail(email);
+        return ResponseEntity.ok(ApiResponse.success("User fetched successfully", user));
+    }
+
+    @GetMapping("/me/{mechanicId}")
+    public ResponseEntity<ApiResponse<UserDTO>> getCurrentMechanic(@PathVariable UUID mechanicId) {
+        UserDTO user = userService.getUserByMechanicId(mechanicId);
         return ResponseEntity.ok(ApiResponse.success("User fetched successfully", user));
     }
 

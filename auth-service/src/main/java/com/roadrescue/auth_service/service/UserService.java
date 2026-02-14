@@ -12,4 +12,6 @@ public interface UserService {
     VehicleDTO addVehicle(String email, AddVehicleRequest request);
 
     UserDTO getUserByEmail(String email);
+
+    UserDTO getUserByMechanicId(UUID mechanicId);
 }

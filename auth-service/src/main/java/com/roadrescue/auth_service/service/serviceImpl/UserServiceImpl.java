@@ -6,8 +6,10 @@ import com.roadrescue.auth_service.dto.UserDTO;
 import com.roadrescue.auth_service.dto.VehicleDTO;
 import com.roadrescue.auth_service.exceptions.DuplicateResourceException;
 import com.roadrescue.auth_service.exceptions.ResourceNotFoundException;
+import com.roadrescue.auth_service.model.MechanicProfile;
 import com.roadrescue.auth_service.model.User;
 import com.roadrescue.auth_service.model.Vehicle;
+import com.roadrescue.auth_service.repository.MechanicProfileRepository;
 import com.roadrescue.auth_service.repository.UserRepository;
 import com.roadrescue.auth_service.repository.VehicleRepository;
 import com.roadrescue.auth_service.service.UserService;
@@ -27,10 +29,20 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final VehicleRepository vehicleRepository;
     private final ModelMapper modelMapper;
+    private final MechanicProfileRepository mechanicProfileRepository;
 
     @Override
     public UserDTO getUserByEmail(String email) {
         User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        return modelMapper.map(user, UserDTO.class);
+    }
+
+    @Override
+    public UserDTO getUserByMechanicId(UUID mechanicId) {
+        MechanicProfile mechanicProfile = mechanicProfileRepository.findById(mechanicId)
+                .orElseThrow(() -> new ResourceNotFoundException("Mechanic Profile not found"));
+        User user = userRepository.findById(mechanicProfile.getUser().getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         return modelMapper.map(user, UserDTO.class);
     }
