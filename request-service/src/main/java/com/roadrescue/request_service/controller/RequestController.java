@@ -58,4 +58,10 @@ public class RequestController {
         requestService.rejectRequest(requestId, mechanicEmail);
         return ResponseEntity.ok(ApiResponse.success("Request rejected", null));
     }
+
+    @PutMapping("/{requestId}/en-route")
+    public ResponseEntity<Void> markEnRoute(@PathVariable UUID requestId) {
+        requestService.markEnRoute(requestId);
+        return ResponseEntity.ok().build();
+    }
 }

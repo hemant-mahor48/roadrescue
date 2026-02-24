@@ -51,4 +51,22 @@ public class LocationController {
         MechanicLocation location = locationService.getMechanicLocation(mechanicId);
         return ResponseEntity.ok(location);
     }
+
+    @PostMapping("/mechanics/{mechanicId}/track")
+    public ResponseEntity<Void> trackEnRoute(
+            @PathVariable UUID mechanicId,
+            @RequestParam BigDecimal lat,
+            @RequestParam BigDecimal lng,
+            @RequestParam UUID requestId,
+            @RequestParam UUID customerId,
+            @RequestParam BigDecimal customerLat,
+            @RequestParam BigDecimal customerLng) {
+
+        locationService.trackMechanicEnRoute(
+                mechanicId, lat, lng,
+                requestId, customerId,
+                customerLat, customerLng);
+
+        return ResponseEntity.ok().build();
+    }
 }

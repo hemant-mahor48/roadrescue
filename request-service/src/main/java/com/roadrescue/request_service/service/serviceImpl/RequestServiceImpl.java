@@ -19,9 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,6 +31,14 @@ public class RequestServiceImpl implements RequestService {
     private final UserFeignClient userFeignClient;
     private final RequestMapper requestMapper;
     private final KafkaProducerService kafkaProducerService;
+
+    private static final Set<RequestStatus> TERMINAL_OR_LATER = EnumSet.of(
+            RequestStatus.EN_ROUTE,
+            RequestStatus.IN_PROGRESS,
+            RequestStatus.COMPLETED,
+            RequestStatus.CANCELLED,
+            RequestStatus.PAYMENT_PENDING
+    );
 
     @Override
     public String createRequest(String email, BreakdownRequest breakdownRequest) {
@@ -163,5 +169,28 @@ public class RequestServiceImpl implements RequestService {
         kafkaProducerService.sendMechanicRejectionEvent(event);
 
         log.info("Request {} rejected, searching for next mechanic", requestId);
+    }
+
+    @Override
+    @Transactional
+    public void markEnRoute(UUID requestId) {
+        Request request = requestRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Request not found: " + requestId));
+
+        if (TERMINAL_OR_LATER.contains(request.getStatus())) {
+            log.debug("markEnRoute no-op: request {} already in status {}",
+                    requestId, request.getStatus());
+            return;
+        }
+
+        if (request.getStatus() != RequestStatus.ASSIGNED) {
+            log.warn("markEnRoute unexpected status {} for request {} — skipping",
+                    request.getStatus(), requestId);
+            return;
+        }
+
+        request.setStatus(RequestStatus.EN_ROUTE);
+        requestRepository.save(request);
+        log.info("Request {} transitioned ASSIGNED → EN_ROUTE", requestId);
     }
 }

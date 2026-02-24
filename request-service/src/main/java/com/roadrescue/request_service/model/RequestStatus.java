@@ -8,6 +8,7 @@ public enum RequestStatus {
     COMPLETED,        // Service completed
     CANCELLED,        // Cancelled
     PAYMENT_PENDING,  // Payment failed
-    PAID              // Payment successful
+    PAID,
+    EN_ROUTE// Payment successful
 }
 

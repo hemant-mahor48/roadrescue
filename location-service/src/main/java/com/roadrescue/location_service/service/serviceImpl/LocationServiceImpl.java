@@ -1,17 +1,23 @@
 package com.roadrescue.location_service.service.serviceImpl;
 
+import com.roadrescue.location_service.client.RequestServiceClient;
+import com.roadrescue.location_service.dto.LocationUpdateEvent;
+import com.roadrescue.location_service.service.EtaCalculatorService;
 import com.roadrescue.location_service.service.LocationService;
 
 import com.roadrescue.location_service.dto.MechanicLocation;
 import com.roadrescue.location_service.dto.NearbyMechanic;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.geo.*;
 import org.springframework.data.redis.connection.RedisGeoCommands;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -23,8 +29,15 @@ public class LocationServiceImpl implements LocationService {
 
     private static final String MECHANIC_GEO_KEY = "mechanics:locations";
     private static final String MECHANIC_AVAILABILITY_KEY = "mechanics:availability:";
+    private static final String MECHANICS_GEO_KEY = "mechanics_live";
 
     private final RedisTemplate<String, Object> redisTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final EtaCalculatorService etaCalculatorService;
+    private final RequestServiceClient requestServiceClient;
+
+    @Value("${spring.kafka.topic.location-updates-topic}")
+    private String locationUpdatesTopic;
 
     @Override
     public void updateMechanicLocation(UUID mechanicId, BigDecimal lat, BigDecimal lng) {
@@ -112,5 +125,51 @@ public class LocationServiceImpl implements LocationService {
                 .isAvailable(isAvailable != null ? isAvailable : false)
                 .lastUpdated(System.currentTimeMillis())
                 .build();
+    }
+
+    @Override
+    public void trackMechanicEnRoute(UUID mechanicId,
+                                     BigDecimal lat,
+                                     BigDecimal lng,
+                                     UUID requestId,
+                                     UUID customerId,
+                                     BigDecimal customerLat,
+                                     BigDecimal customerLng) {
+
+        updateMechanicLocation(mechanicId, lat, lng);
+        double distanceKm = etaCalculatorService.calculateDistanceKm(lat, lng, customerLat, customerLng);
+        int etaMinutes    = etaCalculatorService.calculateEtaMinutes(distanceKm);
+
+        try {
+            requestServiceClient.markEnRoute(requestId);
+        } catch (Exception e) {
+            log.warn("Could not transition request {} to EN_ROUTE (will retry next ping): {}",
+                    requestId, e.getMessage());
+        }
+
+        LocationUpdateEvent event = LocationUpdateEvent.builder()
+                .requestId(requestId)
+                .mechanicId(mechanicId)
+                .customerId(customerId)
+                .currentLat(lat)
+                .currentLng(lng)
+                .etaMinutes(etaMinutes)
+                .distanceRemainingKm(distanceKm)
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        kafkaTemplate.send(locationUpdatesTopic, requestId.toString(), event)
+                .whenComplete((result, ex) -> {
+                    if (ex != null) {
+                        log.error("Failed to publish location update for mechanic {}: {}",
+                                mechanicId, ex.getMessage());
+                    } else {
+                        log.debug("Location update published — mechanic: {}, ETA: {} min, dist: {:.2f} km",
+                                mechanicId, etaMinutes, distanceKm);
+                    }
+                });
+
+        log.info("Tracking: mechanic={} pos=({},{}) → ETA {} min, {:.2f} km remaining",
+                mechanicId, lat, lng, etaMinutes, distanceKm);
     }
 }

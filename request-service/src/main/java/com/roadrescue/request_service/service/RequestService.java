@@ -16,4 +16,6 @@ public interface RequestService {
     void acceptRequest(UUID requestId, String mechanicEmail);
 
     void rejectRequest(UUID requestId, String mechanicEmail);
+
+    void markEnRoute(UUID requestId);
 }

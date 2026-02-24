@@ -12,4 +12,11 @@ public interface LocationService {
     List<NearbyMechanic> findNearbyMechanics(BigDecimal lat, BigDecimal lng, Double radiusKm);
     void setMechanicAvailability(UUID mechanicId, Boolean isAvailable);
     MechanicLocation getMechanicLocation(UUID mechanicId);
+    void trackMechanicEnRoute(UUID mechanicId,
+                              BigDecimal lat,
+                              BigDecimal lng,
+                              UUID requestId,
+                              UUID customerId,
+                              BigDecimal customerLat,
+                              BigDecimal customerLng);
 }

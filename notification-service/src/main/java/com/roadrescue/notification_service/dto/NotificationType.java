@@ -13,6 +13,7 @@ public enum NotificationType {
     PAYMENT_SUCCESS,
     NO_MECHANIC_FOUND,
     REQUEST_CANCELLED,
+    MECHANIC_ARRIVING_SOON,
 
     // Mechanic notifications
     NEW_REQUEST_NEARBY,

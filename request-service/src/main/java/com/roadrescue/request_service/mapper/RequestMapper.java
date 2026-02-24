@@ -6,7 +6,6 @@ import com.roadrescue.request_service.dto.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import com.roadrescue.request_service.model.IssueType;
 import com.roadrescue.request_service.model.Request;
 import com.roadrescue.request_service.model.RequestStatus;
 
