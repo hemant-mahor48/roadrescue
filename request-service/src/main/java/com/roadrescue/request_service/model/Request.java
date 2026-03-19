@@ -26,6 +26,10 @@ public class Request {
 
     @Column(nullable = false)
     private UUID userId;
+
+    @Column(nullable = false)
+    private UUID selectedVehicleId;
+
     @Column(nullable = false)
     private List<UUID> vehicleIds;
 
@@ -47,11 +51,15 @@ public class Request {
     private RequestStatus status;
 
     @ElementCollection
+    private List<String> photoUrls;
+
+    @ElementCollection
     private List<String> partsUsed;
 
     private Double laborCharge;
     private Double partsCharge;
     private Double finalAmount;
+    private LocalDateTime serviceStartedAt;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

@@ -9,19 +9,32 @@ import org.springframework.stereotype.Component;
 import com.roadrescue.request_service.model.Request;
 import com.roadrescue.request_service.model.RequestStatus;
 
+import java.util.List;
+import java.util.Objects;
+
 @Component
 @Slf4j
 public class RequestMapper {
     public Request toRequest(BreakdownRequest breakdownRequest, UserDTO userDTO) {
+        List<String> photoUrls = breakdownRequest.getPhotoUrls() == null
+                ? List.of()
+                : breakdownRequest.getPhotoUrls().stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(value -> !value.isEmpty())
+                .toList();
+
         return Request.builder()
                 .userId(userDTO.getId())
-                .vehicleIds(userDTO.getVehicles().stream().map(VehicleDTO::getId).toList())
+                .selectedVehicleId(breakdownRequest.getVehicleId())
+                .vehicleIds(List.of(breakdownRequest.getVehicleId()))
                 .locationLatitude(breakdownRequest.getCurrentLocationLat())
                 .locationLongitude(breakdownRequest.getCurrentLocationLng())
                 .issueType(breakdownRequest.getIssueType())
                 .description(breakdownRequest.getDescription())
                 .address(breakdownRequest.getAddress())
                 .status(RequestStatus.PENDING)
+                .photoUrls(photoUrls)
                 .build();
 
     }
@@ -41,23 +54,30 @@ public class RequestMapper {
         BreakdownRequestDTO dto = BreakdownRequestDTO.builder()
                 .id(request.getId())
                 .userId(request.getUserId())
+                .selectedVehicleId(request.getSelectedVehicleId())
                 .vehicleIds(request.getVehicleIds())
                 .locationLatitude(request.getLocationLatitude())
                 .locationLongitude(request.getLocationLongitude())
                 .address(request.getAddress())
                 .issueType(request.getIssueType())
                 .description(request.getDescription())
+                .photoUrls(request.getPhotoUrls())
                 .mechanicId(request.getMechanicId())
-                .mechanicName(mechanicDTO.getFullName())
-                .mechanicPhone(mechanicDTO.getPhone())
                 .status(request.getStatus())
                 .partsUsed(request.getPartsUsed())
                 .laborCharge(request.getLaborCharge())
                 .partsCharge(request.getPartsCharge())
                 .finalAmount(request.getFinalAmount())
+                .serviceStartedAt(request.getServiceStartedAt())
                 .createdAt(request.getCreatedAt())
                 .updatedAt(request.getUpdatedAt())
                 .build();
+
+        if (mechanicDTO != null) {
+            dto.setMechanicName(mechanicDTO.getFullName());
+            dto.setMechanicPhone(mechanicDTO.getPhone());
+        }
+
         return dto;
     }
 }

@@ -46,12 +46,15 @@ public class RequestServiceImpl implements RequestService {
             UserDTO userDTO = userFeignClient.getCurrentUser(email)
                     .orElseThrow(() -> new UserNotFoundException("User Not Found!!")).getData();
 
+            validateVehicleSelection(userDTO, breakdownRequest.getVehicleId());
             Request request = requestMapper.toRequest(breakdownRequest, userDTO);
             Request savedRequest = requestRepository.save(request);
 
             BreakdownRequestEvent event = requestMapper.toBreakdownRequestEvent(savedRequest, userDTO);
             try {
                 kafkaProducerService.sendEvent(event);
+                savedRequest.setStatus(RequestStatus.SEARCHING);
+                requestRepository.save(savedRequest);
             } catch (Exception e) {
                 log.error("Failed to publish event for request: {}", savedRequest.getId(), e);
             }
@@ -72,10 +75,10 @@ public class RequestServiceImpl implements RequestService {
 
             List<Request> requests = requestRepository.findByUserId(userDTO.getId());
             for(Request req : requests) {
-                UserDTO mechanicDTO = userFeignClient.getCurrentMechanicById(req.getMechanicId())
-                        .orElseThrow(() -> new UserNotFoundException("Mechanic Not Found!!"))
-                        .getData();
-                myRequests.add(requestMapper.convertToBreakdownRequestDTO(req, mechanicDTO));
+                myRequests.add(requestMapper.convertToBreakdownRequestDTO(
+                        req,
+                        resolveMechanic(req.getMechanicId())
+                ));
             }
             return myRequests;
         } catch (FeignException e) {
@@ -94,16 +97,15 @@ public class RequestServiceImpl implements RequestService {
             Request request = requestRepository.findById(requestId)
                     .orElseThrow(() -> new ResourceNotFoundException("Request not found"));
 
-            UserDTO mechanicDTO = userFeignClient.getCurrentMechanicById(request.getMechanicId())
-                    .orElseThrow(() -> new UserNotFoundException("Mechanic Not Found!!"))
-                    .getData();
-
             // Verify the request belongs to the user
             if (!request.getUserId().equals(userDTO.getId())) {
                 throw new BusinessException("You don't have permission to view this request");
             }
 
-            return requestMapper.convertToBreakdownRequestDTO(request, mechanicDTO);
+            return requestMapper.convertToBreakdownRequestDTO(
+                    request,
+                    resolveMechanic(request.getMechanicId())
+            );
         } catch (FeignException e) {
             log.error("Failed to fetch user details", e);
             throw new ServiceUnavailableException("User service is currently unavailable");
@@ -192,5 +194,66 @@ public class RequestServiceImpl implements RequestService {
         request.setStatus(RequestStatus.EN_ROUTE);
         requestRepository.save(request);
         log.info("Request {} transitioned ASSIGNED → EN_ROUTE", requestId);
+    }
+    @Override
+    @Transactional
+    public void markArrived(UUID requestId) {
+        Request request = requestRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Request not found: " + requestId));
+
+        if (EnumSet.of(
+                RequestStatus.IN_PROGRESS,
+                RequestStatus.COMPLETED,
+                RequestStatus.CANCELLED,
+                RequestStatus.PAYMENT_PENDING
+        ).contains(request.getStatus())) {
+            log.debug("markArrived no-op: request {} already in status {}",
+                    requestId, request.getStatus());
+            return;
+        }
+
+        if (request.getStatus() != RequestStatus.EN_ROUTE && request.getStatus() != RequestStatus.ASSIGNED) {
+            log.warn("markArrived unexpected status {} for request {} - skipping",
+                    request.getStatus(), requestId);
+            return;
+        }
+
+        RequestStatus previousStatus = request.getStatus();
+        request.setStatus(RequestStatus.IN_PROGRESS);
+        if (request.getServiceStartedAt() == null) {
+            request.setServiceStartedAt(LocalDateTime.now());
+        }
+
+        requestRepository.save(request);
+        log.info("Request {} transitioned {} -> IN_PROGRESS and service timer started at {}",
+                requestId, previousStatus, request.getServiceStartedAt());
+    }
+
+    private UserDTO resolveMechanic(UUID mechanicId) {
+        if (mechanicId == null) {
+            return null;
+        }
+
+        try {
+            return userFeignClient.getCurrentMechanicById(mechanicId)
+                    .orElseThrow(() -> new UserNotFoundException("Mechanic Not Found!!"))
+                    .getData();
+        } catch (Exception e) {
+            log.warn("Could not load mechanic {} details for request projection: {}",
+                    mechanicId, e.getMessage());
+            return null;
+        }
+    }
+
+    private void validateVehicleSelection(UserDTO userDTO, UUID selectedVehicleId) {
+        List<VehicleDTO> vehicles = Optional.ofNullable(userDTO.getVehicles()).orElse(List.of());
+        boolean vehicleExists = vehicles.stream()
+                .map(VehicleDTO::getId)
+                .filter(Objects::nonNull)
+                .anyMatch(selectedVehicleId::equals);
+
+        if (!vehicleExists) {
+            throw new BusinessException("Selected vehicle does not belong to the authenticated user");
+        }
     }
 }

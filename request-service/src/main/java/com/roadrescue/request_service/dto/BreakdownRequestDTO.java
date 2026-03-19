@@ -19,12 +19,14 @@ import java.util.UUID;
 public class BreakdownRequestDTO {
     private UUID id;
     private UUID userId;
+    private UUID selectedVehicleId;
     private List<UUID> vehicleIds;
     private BigDecimal locationLatitude;
     private BigDecimal locationLongitude;
     private String address;
     private IssueType issueType;
     private String description;
+    private List<String> photoUrls;
     private UUID mechanicId;
     private String mechanicName;
     private String mechanicPhone;
@@ -33,6 +35,7 @@ public class BreakdownRequestDTO {
     private Double laborCharge;
     private Double partsCharge;
     private Double finalAmount;
+    private LocalDateTime serviceStartedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

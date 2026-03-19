@@ -30,6 +30,7 @@ public class MechanicNotificationConsumer {
             // Prepare notification data
             Map<String, Object> data = new HashMap<>();
             data.put("requestId", event.getRequestId());
+            data.put("customerId", event.getCustomerId());
             data.put("customerLatitude", event.getCustomerLatitude());
             data.put("customerLongitude", event.getCustomerLongitude());
             data.put("estimatedDistance", event.getEstimatedDistance());

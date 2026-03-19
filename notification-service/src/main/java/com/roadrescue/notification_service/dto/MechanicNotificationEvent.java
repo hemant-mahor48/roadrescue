@@ -16,6 +16,7 @@ import java.util.UUID;
 public class MechanicNotificationEvent {
     private UUID requestId;
     private UUID mechanicId;
+    private UUID customerId;
     private BigDecimal customerLatitude;
     private BigDecimal customerLongitude;
     private Double estimatedDistance;

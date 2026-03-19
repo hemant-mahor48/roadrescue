@@ -7,6 +7,7 @@ import com.roadrescue.matching_service.service.KafkaProducerService;
 import com.roadrescue.matching_service.service.MatchingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -23,17 +24,17 @@ public class MatchingServiceImpl implements MatchingService {
     private final UserFeignClient userClient;
     private final KafkaProducerService kafkaProducerService;
 
-    private static final Double DEFAULT_SEARCH_RADIUS_KM = 10.0;
-    private static final Double MAX_SEARCH_RADIUS_KM = 50.0;
+    @Value("${matching.search-radius-km:10.0}")
+    private Double searchRadiusKm;
 
     @Override
     public UUID findBestMechanic(BreakdownRequestEvent event) {
         log.info("Finding mechanic for request: {}", event.getRequestId());
 
-        // Step 1: Find nearby mechanics
-        List<NearbyMechanic> nearbyMechanics = findMechanicsWithExpandingRadius(
+        List<NearbyMechanic> nearbyMechanics = locationClient.findNearbyMechanics(
                 event.getLatitude(),
-                event.getLongitude()
+                event.getLongitude(),
+                searchRadiusKm
         );
 
         if (nearbyMechanics.isEmpty()) {
@@ -62,6 +63,7 @@ public class MatchingServiceImpl implements MatchingService {
         MechanicNotificationEvent notificationEvent = MechanicNotificationEvent.builder()
                 .requestId(event.getRequestId())
                 .mechanicId(bestMechanic.getMechanicId())
+                .customerId(event.getUserId())
                 .customerLatitude(event.getLatitude())
                 .customerLongitude(event.getLongitude())
                 .estimatedDistance(bestMechanic.getDistance())
@@ -76,26 +78,6 @@ public class MatchingServiceImpl implements MatchingService {
 
         return bestMechanic.getMechanicId();
     }
-
-    private List<NearbyMechanic> findMechanicsWithExpandingRadius(
-            java.math.BigDecimal lat,
-            java.math.BigDecimal lng) {
-
-        Double radius = DEFAULT_SEARCH_RADIUS_KM;
-        List<NearbyMechanic> mechanics;
-
-        do {
-            mechanics = locationClient.findNearbyMechanics(lat, lng, radius);
-            if (!mechanics.isEmpty()) {
-                return mechanics;
-            }
-            radius += 10.0; // Expand by 10km
-            log.info("Expanding search radius to {}km", radius);
-        } while (radius <= MAX_SEARCH_RADIUS_KM);
-
-        return List.of();
-    }
-
     @Override
     public Double calculateMatchScore(NearbyMechanic mechanic, BreakdownRequestEvent event) {
         try {
@@ -109,7 +91,7 @@ public class MatchingServiceImpl implements MatchingService {
             double acceptanceRateWeight = 0.10;
 
             // Distance score (inverse - closer is better)
-            double distanceScore = 1.0 - (mechanic.getDistance() / MAX_SEARCH_RADIUS_KM);
+            double distanceScore = 1.0 - (mechanic.getDistance() / Math.max(searchRadiusKm, 1.0));
             distanceScore = Math.max(0, distanceScore);
 
             // Rating score (0-5 → 0-1)
@@ -132,7 +114,7 @@ public class MatchingServiceImpl implements MatchingService {
         } catch (Exception e) {
             log.error("Error calculating score for mechanic: {}", mechanic.getMechanicId(), e);
             // Fallback to distance-only scoring
-            return 1.0 - (mechanic.getDistance() / MAX_SEARCH_RADIUS_KM);
+            return Math.max(0, 1.0 - (mechanic.getDistance() / Math.max(searchRadiusKm, 1.0)));
         }
     }
 

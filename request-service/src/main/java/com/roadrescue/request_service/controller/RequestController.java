@@ -64,4 +64,10 @@ public class RequestController {
         requestService.markEnRoute(requestId);
         return ResponseEntity.ok().build();
     }
+
+    @PutMapping("/{requestId}/arrived")
+    public ResponseEntity<Void> markArrived(@PathVariable UUID requestId) {
+        requestService.markArrived(requestId);
+        return ResponseEntity.ok().build();
+    }
 }

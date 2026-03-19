@@ -31,6 +31,10 @@ public class GatewayConfig {
                         .path("/api/v1/requests/**")
                         .filters(f -> f.filter(jwtFilter))
                         .uri("lb://REQUEST-SERVICE"))
+                .route("location-routes", r -> r
+                        .path("/api/v1/location/**")
+                        .filters(f -> f.filter(jwtFilter))
+                        .uri("lb://LOCATION-SERVICE"))
                 .build();
     }
 }
