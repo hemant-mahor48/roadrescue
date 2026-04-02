@@ -35,6 +35,18 @@ public class GatewayConfig {
                         .path("/api/v1/location/**")
                         .filters(f -> f.filter(jwtFilter))
                         .uri("lb://LOCATION-SERVICE"))
+                .route("payment-routes", r -> r
+                        .path("/api/v1/payments/**")
+                        .filters(f -> f.filter(jwtFilter))
+                        .uri("lb://PAYMENT-SERVICE"))
+                .route("analytics-routes", r -> r
+                        .path("/api/v1/analytics/**")
+                        .filters(f -> f.filter(jwtFilter))
+                        .uri("lb://ANALYTICS-SERVICE"))
+                .route("rating-routes", r -> r
+                        .path("/api/v1/ratings/**")
+                        .filters(f -> f.filter(jwtFilter))
+                        .uri("lb://RATING-SERVICE"))
                 .build();
     }
 }

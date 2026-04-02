@@ -34,6 +34,7 @@ public class RequestMapper {
                 .description(breakdownRequest.getDescription())
                 .address(breakdownRequest.getAddress())
                 .status(RequestStatus.PENDING)
+                .excludedMechanicIds(List.of())
                 .photoUrls(photoUrls)
                 .build();
 
@@ -46,6 +47,7 @@ public class RequestMapper {
                 .latitude(savedRequest.getLocationLatitude())
                 .longitude(savedRequest.getLocationLongitude())
                 .issueType(savedRequest.getIssueType())
+                .excludedMechanicIds(savedRequest.getExcludedMechanicIds())
                 .timestamp(LocalDateTime.now())
                 .build();
     }
@@ -68,7 +70,11 @@ public class RequestMapper {
                 .laborCharge(request.getLaborCharge())
                 .partsCharge(request.getPartsCharge())
                 .finalAmount(request.getFinalAmount())
+                .serviceNotes(request.getServiceNotes())
+                .beforeServicePhotos(request.getBeforeServicePhotos())
+                .afterServicePhotos(request.getAfterServicePhotos())
                 .serviceStartedAt(request.getServiceStartedAt())
+                .completedAt(request.getCompletedAt())
                 .createdAt(request.getCreatedAt())
                 .updatedAt(request.getUpdatedAt())
                 .build();
@@ -76,6 +82,12 @@ public class RequestMapper {
         if (mechanicDTO != null) {
             dto.setMechanicName(mechanicDTO.getFullName());
             dto.setMechanicPhone(mechanicDTO.getPhone());
+            dto.setMechanicProfileImageUrl(mechanicDTO.getProfileImageUrl());
+            dto.setMechanicRating(
+                    mechanicDTO.getMechanicProfile() != null
+                            ? mechanicDTO.getMechanicProfile().getRating()
+                            : null
+            );
         }
 
         return dto;

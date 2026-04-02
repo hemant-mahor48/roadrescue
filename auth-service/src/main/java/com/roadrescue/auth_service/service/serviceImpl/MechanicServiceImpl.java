@@ -156,4 +156,15 @@ public class MechanicServiceImpl implements MechanicService {
                 .orElseThrow(() -> new ResourceNotFoundException("Mechanic profile not found"));
         return modelMapper.map(profile, MechanicProfileDTO.class);
     }
+
+    @Override
+    @Transactional
+    public void updateRatingMetrics(UUID mechanicId, Double rating, Integer totalReviews) {
+        MechanicProfile profile = mechanicProfileRepository.findById(mechanicId)
+                .orElseThrow(() -> new ResourceNotFoundException("Mechanic profile not found"));
+
+        profile.setRating(rating == null ? profile.getRating() : rating);
+        profile.setTotalReviews(totalReviews == null ? profile.getTotalReviews() : totalReviews);
+        mechanicProfileRepository.save(profile);
+    }
 }

@@ -13,7 +13,9 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -35,7 +37,9 @@ public class MatchingServiceImpl implements MatchingService {
                 event.getLatitude(),
                 event.getLongitude(),
                 searchRadiusKm
-        );
+        ).stream()
+                .filter(mechanic -> !isExcluded(mechanic.getMechanicId(), event.getExcludedMechanicIds()))
+                .toList();
 
         if (nearbyMechanics.isEmpty()) {
             log.warn("No mechanics found for request: {}", event.getRequestId());
@@ -59,6 +63,8 @@ public class MatchingServiceImpl implements MatchingService {
             return null;
         }
 
+        double estimatedPayment = estimatePayment(event.getIssueType(), bestMechanic.getDistance());
+
         // Step 3: Publish notification event
         MechanicNotificationEvent notificationEvent = MechanicNotificationEvent.builder()
                 .requestId(event.getRequestId())
@@ -67,6 +73,7 @@ public class MatchingServiceImpl implements MatchingService {
                 .customerLatitude(event.getLatitude())
                 .customerLongitude(event.getLongitude())
                 .estimatedDistance(bestMechanic.getDistance())
+                .estimatedPayment(estimatedPayment)
                 .issueType(event.getIssueType())
                 .timestamp(LocalDateTime.now())
                 .build();
@@ -78,6 +85,7 @@ public class MatchingServiceImpl implements MatchingService {
 
         return bestMechanic.getMechanicId();
     }
+
     @Override
     public Double calculateMatchScore(NearbyMechanic mechanic, BreakdownRequestEvent event) {
         try {
@@ -130,6 +138,27 @@ public class MatchingServiceImpl implements MatchingService {
             case FUEL_EMPTY -> specialization.contains("FUEL");
             default -> true; // General mechanics can handle other issues
         };
+    }
+
+    private boolean isExcluded(UUID mechanicId, List<UUID> excludedMechanicIds) {
+        Set<UUID> excluded = excludedMechanicIds == null
+                ? Set.of()
+                : excludedMechanicIds.stream().collect(Collectors.toSet());
+        return excluded.contains(mechanicId);
+    }
+
+    private double estimatePayment(com.roadrescue.matching_service.model.IssueType issueType, double distanceKm) {
+        double baseAmount = switch (issueType) {
+            case TYRE_PUNCTURE -> 450.0;
+            case BATTERY_ISSUE -> 650.0;
+            case ENGINE_FAILURE -> 1200.0;
+            case FUEL_EMPTY -> 500.0;
+            case LOCKOUT -> 400.0;
+            case ACCIDENT -> 1500.0;
+            case OTHER -> 550.0;
+        };
+
+        return Math.round((baseAmount + (distanceKm * 35.0)) * 100.0) / 100.0;
     }
 
     @lombok.Data

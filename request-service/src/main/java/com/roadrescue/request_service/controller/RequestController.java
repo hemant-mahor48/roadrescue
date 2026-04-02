@@ -1,8 +1,10 @@
 package com.roadrescue.request_service.controller;
 
 import com.roadrescue.request_service.dto.ApiResponse;
+import com.roadrescue.request_service.dto.AcceptRequestPayload;
 import com.roadrescue.request_service.dto.BreakdownRequest;
 import com.roadrescue.request_service.dto.BreakdownRequestDTO;
+import com.roadrescue.request_service.dto.ServiceCompletionRequest;
 import com.roadrescue.request_service.service.RequestService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -46,8 +48,9 @@ public class RequestController {
     @PutMapping("/{requestId}/accept")
     public ResponseEntity<ApiResponse<Void>> acceptRequest(
             @PathVariable UUID requestId,
-            @RequestHeader("X-auth-user") String mechanicEmail) {
-        requestService.acceptRequest(requestId, mechanicEmail);
+            @RequestHeader("X-auth-user") String mechanicEmail,
+            @RequestBody(required = false) AcceptRequestPayload payload) {
+        requestService.acceptRequest(requestId, mechanicEmail, payload);
         return ResponseEntity.ok(ApiResponse.success("Request accepted", null));
     }
 
@@ -69,5 +72,14 @@ public class RequestController {
     public ResponseEntity<Void> markArrived(@PathVariable UUID requestId) {
         requestService.markArrived(requestId);
         return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/{requestId}/complete")
+    public ResponseEntity<ApiResponse<Void>> completeRequest(
+            @PathVariable UUID requestId,
+            @RequestHeader("X-auth-user") String mechanicEmail,
+            @RequestBody @Valid ServiceCompletionRequest request) {
+        requestService.completeRequest(requestId, mechanicEmail, request);
+        return ResponseEntity.ok(ApiResponse.success("Request completed successfully", null));
     }
 }

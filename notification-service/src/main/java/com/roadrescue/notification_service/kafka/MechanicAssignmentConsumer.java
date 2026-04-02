@@ -31,6 +31,8 @@ public class MechanicAssignmentConsumer {
             Map<String, Object> data = new HashMap<>();
             data.put("requestId", event.getRequestId());
             data.put("mechanicId", event.getMechanicId());
+            data.put("estimatedAmount", event.getEstimatedAmount());
+            data.put("depositHoldAmount", event.getDepositHoldAmount());
             data.put("status", event.getStatus());
             data.put("assignedAt", event.getAssignedAt());
 
@@ -40,7 +42,7 @@ public class MechanicAssignmentConsumer {
                         event.getCustomerId(),
                         NotificationType.MECHANIC_ASSIGNED,
                         "Mechanic Assigned!",
-                        "A verified mechanic has been assigned to your request and is on the way.",
+                        buildCustomerMessage(event),
                         data
                 );
 
@@ -67,5 +69,17 @@ public class MechanicAssignmentConsumer {
             log.error("Error processing mechanic assignment event: {}",
                     event.getRequestId(), e);
         }
+    }
+
+    private String buildCustomerMessage(MechanicAssignmentEvent event) {
+        if (event.getEstimatedAmount() != null && event.getDepositHoldAmount() != null) {
+            return String.format(
+                    "A verified mechanic has been assigned. Estimated cost is Rs %.0f and a Rs %.0f deposit hold has been placed.",
+                    event.getEstimatedAmount(),
+                    event.getDepositHoldAmount()
+            );
+        }
+
+        return "A verified mechanic has been assigned to your request and is on the way.";
     }
 }

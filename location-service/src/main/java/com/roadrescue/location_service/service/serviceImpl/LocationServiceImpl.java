@@ -2,6 +2,7 @@ package com.roadrescue.location_service.service.serviceImpl;
 
 import com.roadrescue.location_service.client.RequestServiceClient;
 import com.roadrescue.location_service.dto.LocationUpdateEvent;
+import com.roadrescue.location_service.dto.RouteEstimate;
 import com.roadrescue.location_service.service.EtaCalculatorService;
 import com.roadrescue.location_service.service.LocationService;
 
@@ -27,9 +28,8 @@ import java.util.stream.Collectors;
 @Slf4j
 public class LocationServiceImpl implements LocationService {
 
-    private static final String MECHANIC_GEO_KEY = "mechanics:locations";
+    private static final String MECHANIC_GEO_KEY = "mechanics_live";
     private static final String MECHANIC_AVAILABILITY_KEY = "mechanics:availability:";
-    private static final String MECHANICS_GEO_KEY = "mechanics_live";
 
     private final RedisTemplate<String, Object> redisTemplate;
     private final KafkaTemplate<String, Object> kafkaTemplate;
@@ -137,8 +137,9 @@ public class LocationServiceImpl implements LocationService {
                                      BigDecimal customerLng) {
 
         updateMechanicLocation(mechanicId, lat, lng);
-        double distanceKm = etaCalculatorService.calculateDistanceKm(lat, lng, customerLat, customerLng);
-        int etaMinutes    = etaCalculatorService.calculateEtaMinutes(distanceKm);
+        RouteEstimate routeEstimate = etaCalculatorService.estimateRoute(lat, lng, customerLat, customerLng);
+        double distanceKm = routeEstimate.getDistanceKm();
+        int etaMinutes = routeEstimate.getEtaMinutes();
 
         try {
             requestServiceClient.markEnRoute(requestId);

@@ -2,6 +2,7 @@ package com.roadrescue.request_service.service.serviceImpl;
 
 import com.roadrescue.request_service.dto.BreakdownRequestEvent;
 import com.roadrescue.request_service.dto.MechanicAssignmentEvent;
+import com.roadrescue.request_service.dto.ServiceCompletionEvent;
 import com.roadrescue.request_service.service.KafkaProducerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +25,9 @@ public class KafkaProducerServiceImpl implements KafkaProducerService {
 
     @Value("${spring.kafka.topic.mechanic-rejection-topic}")
     private String rejectionTopic;
+
+    @Value("${spring.kafka.topic.service-completion-topic}")
+    private String serviceCompletionTopic;
 
     @Override
     public void sendMechanicAssignmentEvent(MechanicAssignmentEvent event) {
@@ -57,6 +61,18 @@ public class KafkaProducerServiceImpl implements KafkaProducerService {
                         log.info("Message sent successfully: {}", event);
                     } else {
                         log.error("Failed to send message", ex);
+                    }
+                });
+    }
+
+    @Override
+    public void sendServiceCompletionEvent(ServiceCompletionEvent event) {
+        kafkaTemplate.send(serviceCompletionTopic, event.getRequestId().toString(), event)
+                .whenComplete((result, ex) -> {
+                    if (ex == null) {
+                        log.info("Service completion event sent: {}", event);
+                    } else {
+                        log.error("Failed to send service completion event", ex);
                     }
                 });
     }

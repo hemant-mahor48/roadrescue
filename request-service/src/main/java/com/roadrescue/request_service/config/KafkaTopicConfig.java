@@ -18,6 +18,12 @@ public class KafkaTopicConfig {
     @Value("${spring.kafka.topic.mechanic-rejection-topic}")
     private String mechanicRejectionTopic;
 
+    @Value("${spring.kafka.topic.service-completion-topic}")
+    private String serviceCompletionTopic;
+
+    @Value("${spring.kafka.topic.payments-topic}")
+    private String paymentsTopic;
+
     @Bean
     public NewTopic mechanicAssignmentTopic() {
         return TopicBuilder.name(mechanicAssignmentTopic)
@@ -37,6 +43,22 @@ public class KafkaTopicConfig {
     @Bean
     public NewTopic breakdownRequestsTopic() {
         return TopicBuilder.name(topicName)
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic serviceCompletionTopic() {
+        return TopicBuilder.name(serviceCompletionTopic)
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic paymentsTopic() {
+        return TopicBuilder.name(paymentsTopic)
                 .partitions(3)
                 .replicas(1)
                 .build();

@@ -51,6 +51,9 @@ public class Request {
     private RequestStatus status;
 
     @ElementCollection
+    private List<UUID> excludedMechanicIds;
+
+    @ElementCollection
     private List<String> photoUrls;
 
     @ElementCollection
@@ -59,7 +62,14 @@ public class Request {
     private Double laborCharge;
     private Double partsCharge;
     private Double finalAmount;
+    @Column(length = 2000)
+    private String serviceNotes;
+    @ElementCollection
+    private List<String> beforeServicePhotos;
+    @ElementCollection
+    private List<String> afterServicePhotos;
     private LocalDateTime serviceStartedAt;
+    private LocalDateTime completedAt;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

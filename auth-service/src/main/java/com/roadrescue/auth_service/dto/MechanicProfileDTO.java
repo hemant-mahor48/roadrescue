@@ -22,8 +22,10 @@ public class MechanicProfileDTO {
     private Boolean aadhaarVerified;
     private Boolean policeVerificationDone;
 
-    private Double rating = 4.5;              // Default rating
+    private Double rating = 4.5;
+    private Integer totalReviews = 0;
     private Integer totalJobs = 0;
-    private Double acceptanceRate = 85.0;     // Default 85%
+    private Double acceptanceRate = 85.0;
+    private Double averageResponseTimeMins = 5.0;
     private String specialization = "GENERAL";
 }

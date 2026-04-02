@@ -16,6 +16,8 @@ public class MechanicAssignmentEvent {
     private UUID requestId;
     private UUID mechanicId;
     private UUID customerId;
+    private Double estimatedAmount;
+    private Double depositHoldAmount;
     private String status;
     private LocalDateTime assignedAt;
 }

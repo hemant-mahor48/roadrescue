@@ -34,10 +34,14 @@ public class MechanicNotificationConsumer {
             data.put("customerLatitude", event.getCustomerLatitude());
             data.put("customerLongitude", event.getCustomerLongitude());
             data.put("estimatedDistance", event.getEstimatedDistance());
+            data.put("estimatedPayment", event.getEstimatedPayment());
             data.put("issueType", event.getIssueType());
 
             // Format distance for display
             String distanceText = String.format("%.1f km", event.getEstimatedDistance());
+            String estimatedPaymentText = event.getEstimatedPayment() == null
+                    ? "N/A"
+                    : String.format("Rs %.0f", event.getEstimatedPayment());
 
             // Send notification to mechanic
             notificationService.sendToMechanic(
@@ -46,7 +50,8 @@ public class MechanicNotificationConsumer {
                     "New Request Nearby!",
                     "A customer needs help with "
                             + formatIssueType(String.valueOf(event.getIssueType()))
-                            + ". Distance: " + distanceText,
+                            + ". Distance: " + distanceText
+                            + ". Est. payout: " + estimatedPaymentText,
                     data
             );
 
@@ -54,7 +59,7 @@ public class MechanicNotificationConsumer {
             notificationService.sendPushNotification(
                     event.getMechanicId(),
                     "New Request Nearby",
-                    "Customer needs help " + distanceText + " away"
+                    "Customer needs help " + distanceText + " away. Est. payout: " + estimatedPaymentText
             );
 
         } catch (Exception e) {

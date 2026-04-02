@@ -30,12 +30,18 @@ public class BreakdownRequestDTO {
     private UUID mechanicId;
     private String mechanicName;
     private String mechanicPhone;
+    private String mechanicProfileImageUrl;
+    private Double mechanicRating;
     private RequestStatus status;
     private List<String> partsUsed;
     private Double laborCharge;
     private Double partsCharge;
     private Double finalAmount;
+    private String serviceNotes;
+    private List<String> beforeServicePhotos;
+    private List<String> afterServicePhotos;
     private LocalDateTime serviceStartedAt;
+    private LocalDateTime completedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

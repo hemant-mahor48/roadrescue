@@ -21,6 +21,7 @@ public enum NotificationType {
     REQUEST_TIMEOUT,
     CUSTOMER_CANCELLED,
     PAYMENT_RECEIVED,
+    RATING_REQUEST,
     RATING_RECEIVED,
 
     // Common

@@ -18,6 +18,7 @@ public class MechanicProfileDTO {
     private Boolean isAvailable;
     private BigDecimal currentLocationLat;
     private BigDecimal currentLocationLng;
+    private Double rating;
     private String licenseNumber;
     private String vehicleNumber;
     private Boolean aadharVerified;

@@ -17,4 +17,6 @@ public interface MechanicService {
     void updateAvailability(String email, Boolean available);
 
     MechanicProfileDTO getMechanicProfile(UUID mechanicId);
+
+    void updateRatingMetrics(UUID mechanicId, Double rating, Integer totalReviews);
 }

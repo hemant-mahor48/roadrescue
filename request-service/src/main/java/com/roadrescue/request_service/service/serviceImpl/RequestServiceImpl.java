@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -114,7 +115,7 @@ public class RequestServiceImpl implements RequestService {
 
     @Transactional
     @Override
-    public void acceptRequest(UUID requestId, String mechanicEmail) {
+    public void acceptRequest(UUID requestId, String mechanicEmail, AcceptRequestPayload payload) {
         // Get mechanic profile
         UserDTO mechanicUser = userFeignClient.getCurrentUser(mechanicEmail)
                 .orElseThrow(() -> new UserNotFoundException("Mechanic not found"))
@@ -137,11 +138,16 @@ public class RequestServiceImpl implements RequestService {
         request.setStatus(RequestStatus.ASSIGNED);
         requestRepository.save(request);
 
+        double estimatedAmount = sanitizeEstimatedAmount(payload != null ? payload.getEstimatedPayment() : null);
+        double depositHoldAmount = 200.0;
+
         // Publish mechanic-assignment event with customerId
         MechanicAssignmentEvent event = MechanicAssignmentEvent.builder()
                 .requestId(requestId)
                 .mechanicId(mechanicUser.getMechanicProfile().getId())
                 .customerId(request.getUserId())
+                .estimatedAmount(estimatedAmount)
+                .depositHoldAmount(depositHoldAmount)
                 .status("ASSIGNED")
                 .assignedAt(LocalDateTime.now())
                 .build();
@@ -162,7 +168,20 @@ public class RequestServiceImpl implements RequestService {
         Request request = requestRepository.findById(requestId)
                 .orElseThrow(() -> new ResourceNotFoundException("Request not found"));
 
+        UUID rejectedMechanicId = userDTO.getMechanicProfile() != null
+                ? userDTO.getMechanicProfile().getId()
+                : null;
+
+        List<UUID> excludedMechanicIds = new ArrayList<>(
+                Optional.ofNullable(request.getExcludedMechanicIds()).orElse(List.of())
+        );
+        if (rejectedMechanicId != null && !excludedMechanicIds.contains(rejectedMechanicId)) {
+            excludedMechanicIds.add(rejectedMechanicId);
+        }
+
+        request.setMechanicId(null);
         request.setStatus(RequestStatus.SEARCHING);
+        request.setExcludedMechanicIds(excludedMechanicIds);
         requestRepository.save(request);
 
         // Publish rejection event (Matching service will find next mechanic)
@@ -229,6 +248,77 @@ public class RequestServiceImpl implements RequestService {
                 requestId, previousStatus, request.getServiceStartedAt());
     }
 
+    @Override
+    @Transactional
+    public void completeRequest(UUID requestId, String mechanicEmail, ServiceCompletionRequest completionRequest) {
+        UserDTO mechanicUser = userFeignClient.getCurrentUser(mechanicEmail)
+                .orElseThrow(() -> new UserNotFoundException("Mechanic not found"))
+                .getData();
+
+        if (mechanicUser.getMechanicProfile() == null) {
+            throw new BusinessException("User is not a mechanic");
+        }
+
+        Request request = requestRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Request not found"));
+
+        if (!Objects.equals(request.getMechanicId(), mechanicUser.getMechanicProfile().getId())) {
+            throw new BusinessException("Only the assigned mechanic can complete this request");
+        }
+
+        if (request.getStatus() != RequestStatus.IN_PROGRESS) {
+            throw new BusinessException("Request must be in progress before completion");
+        }
+
+        double totalAmount = completionRequest.getLaborCharge() + completionRequest.getPartsCharge();
+        LocalDateTime completedAt = LocalDateTime.now();
+        int serviceDurationMins = request.getServiceStartedAt() == null
+                ? 0
+                : Math.max(1, (int) ChronoUnit.MINUTES.between(request.getServiceStartedAt(), completedAt));
+
+        request.setServiceNotes(completionRequest.getServiceNotes().trim());
+        request.setBeforeServicePhotos(sanitizeStringList(completionRequest.getBeforeServicePhotos()));
+        request.setAfterServicePhotos(sanitizeStringList(completionRequest.getAfterServicePhotos()));
+        request.setPartsUsed(sanitizeStringList(completionRequest.getPartsUsed()));
+        request.setLaborCharge(completionRequest.getLaborCharge());
+        request.setPartsCharge(completionRequest.getPartsCharge());
+        request.setFinalAmount(totalAmount);
+        request.setCompletedAt(completedAt);
+        request.setStatus(RequestStatus.COMPLETED);
+        requestRepository.save(request);
+
+        ServiceCompletionEvent event = ServiceCompletionEvent.builder()
+                .requestId(request.getId())
+                .customerId(request.getUserId())
+                .mechanicId(request.getMechanicId())
+                .serviceDurationMins(serviceDurationMins)
+                .partsUsed(request.getPartsUsed())
+                .laborCharge(request.getLaborCharge())
+                .partsCharge(request.getPartsCharge())
+                .totalAmount(request.getFinalAmount())
+                .completedAt(completedAt)
+                .build();
+
+        kafkaProducerService.sendServiceCompletionEvent(event);
+        log.info("Request {} completed by mechanic {} with total amount {}",
+                requestId, request.getMechanicId(), totalAmount);
+    }
+
+    @Override
+    @Transactional
+    public void handlePaymentUpdate(PaymentEvent paymentEvent) {
+        Request request = requestRepository.findById(paymentEvent.getRequestId())
+                .orElseThrow(() -> new ResourceNotFoundException("Request not found"));
+
+        request.setStatus("SUCCESS".equalsIgnoreCase(paymentEvent.getStatus())
+                ? RequestStatus.PAID
+                : RequestStatus.PAYMENT_PENDING);
+        requestRepository.save(request);
+
+        log.info("Request {} payment status updated to {}",
+                paymentEvent.getRequestId(), request.getStatus());
+    }
+
     private UserDTO resolveMechanic(UUID mechanicId) {
         if (mechanicId == null) {
             return null;
@@ -255,5 +345,24 @@ public class RequestServiceImpl implements RequestService {
         if (!vehicleExists) {
             throw new BusinessException("Selected vehicle does not belong to the authenticated user");
         }
+    }
+
+    private List<String> sanitizeStringList(List<String> values) {
+        if (values == null) {
+            return List.of();
+        }
+
+        return values.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(value -> !value.isEmpty())
+                .toList();
+    }
+
+    private double sanitizeEstimatedAmount(Double estimatedPayment) {
+        if (estimatedPayment == null || estimatedPayment <= 0) {
+            return 0.0;
+        }
+        return Math.round(estimatedPayment * 100.0) / 100.0;
     }
 }

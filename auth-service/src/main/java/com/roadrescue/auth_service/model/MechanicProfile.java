@@ -43,6 +43,24 @@ public class MechanicProfile {
     @Column(nullable = false)
     private Boolean policeVerificationDone = false;
 
+    @Column(nullable = false)
+    private Double rating = 4.5;
+
+    @Column(nullable = false)
+    private Integer totalReviews = 0;
+
+    @Column(nullable = false)
+    private Integer totalJobs = 0;
+
+    @Column(nullable = false)
+    private Double acceptanceRate = 85.0;
+
+    @Column(nullable = false)
+    private Double averageResponseTimeMins = 5.0;
+
+    @Column(nullable = false)
+    private String specialization = "GENERAL";
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 

@@ -20,6 +20,7 @@ public class MechanicNotificationEvent {
     private BigDecimal customerLatitude;
     private BigDecimal customerLongitude;
     private Double estimatedDistance;
+    private Double estimatedPayment;
     private IssueType issueType;
     private LocalDateTime timestamp;
 }
